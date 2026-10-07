@@ -19,6 +19,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
   late TransactionType _type;
   late DateTime _date;
 
@@ -32,6 +33,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     _amountController = TextEditingController(
       text: tx == null ? '' : tx.amount.toString(),
     );
+    _noteController = TextEditingController(text: tx?.note ?? '');
     _type = tx?.type ?? TransactionType.expense;
     _date = tx?.date ?? DateTime.now();
   }
@@ -40,6 +42,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -64,6 +67,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       amount: double.parse(_amountController.text.trim()),
       date: _date,
       type: _type,
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
     );
     if (_isEdit) {
       await provider.updateTransaction(widget.transaction!.id!, tx);
@@ -106,6 +112,11 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 }
                 return null;
               },
+            ),
+            TextFormField(
+              controller: _noteController,
+              decoration: const InputDecoration(labelText: 'หมายเหตุ'),
+              maxLines: 2,
             ),
             const SizedBox(height: 16),
             SegmentedButton<TransactionType>(

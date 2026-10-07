@@ -6,6 +6,7 @@ class MyTransaction {
   final double amount;
   final DateTime date;
   final TransactionType type;
+  final String? note;
 
   MyTransaction({
     this.id,
@@ -13,6 +14,7 @@ class MyTransaction {
     required this.amount,
     required this.date,
     required this.type,
+    this.note,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class MyTransaction {
       'amount': amount,
       'date': date.toIso8601String(),
       'type': type.name,
+      'note': note,
     };
     if (id != null) {
       map['id'] = id;
@@ -35,6 +38,7 @@ class MyTransaction {
       amount: (map['amount'] as num).toDouble(),
       date: DateTime.parse(map['date'] as String),
       type: TransactionType.values.byName(map['type'] as String),
+      note: map['note'] as String?,
     );
   }
 }

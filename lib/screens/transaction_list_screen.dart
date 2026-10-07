@@ -30,11 +30,64 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
+  Future<void> _runImport(bool useBatch) async {
+    final provider = context.read<TransactionProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final elapsed = useBatch
+        ? await provider.importBatch()
+        : await provider.importOneByOne();
+    final label = useBatch ? 'batch ใน transaction' : 'ทีละรายการ';
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'นำเข้า 100 รายการแบบ$label ใช้เวลา ${elapsed.inMilliseconds} ms',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     return Scaffold(
-      appBar: AppBar(title: const Text('รายรับรายจ่าย')),
+      appBar: AppBar(
+        title: const Text('รายรับรายจ่าย'),
+        actions: [
+          PopupMenuButton<bool>(
+            icon: const Icon(Icons.download),
+            onSelected: _runImport,
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: false,
+                child: Text('นำเข้า 100 รายการ (ทีละรายการ)'),
+              ),
+              PopupMenuItem(
+                value: true,
+                child: Text('นำเข้า 100 รายการ (batch)'),
+              ),
+            ],
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(40),
+          child: Consumer<TransactionProvider>(
+            builder: (context, provider, _) {
+              final balance = provider.balance;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'ยอดคงเหลือ ${NumberFormat('#,##0.00').format(balance)} บาท',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: balance >= 0 ? Colors.green : Colors.red,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
       body: FutureBuilder(
         future: _loading,
         builder: (context, snapshot) {
