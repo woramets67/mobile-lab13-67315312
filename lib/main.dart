@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'data/database_setup.dart'
+    if (dart.library.js_interop) 'data/database_setup_web.dart';
+
 import 'providers/transaction_provider.dart';
 import 'screens/transaction_list_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  setupDatabaseFactory();
   runApp(const MyApp());
 }
 

@@ -8,16 +8,21 @@ class TransactionProvider with ChangeNotifier {
   Database? _db;
   List<MyTransaction> _transactions = [];
   double _balance = 0;
+  double _dartBalance = 0;
 
   List<MyTransaction> get transactions => List.unmodifiable(_transactions);
 
   double get balance => _balance;
 
+  double get dartBalance => _dartBalance;
+
   Future<Database> get database async {
     if (_db != null) return _db!;
-    final dbPath = await getDatabasesPath();
+    final dbFile = kIsWeb
+        ? 'expenses.db'
+        : join(await getDatabasesPath(), 'expenses.db');
     _db = await openDatabase(
-      join(dbPath, 'expenses.db'),
+      dbFile,
       version: 2,
       onCreate: (db, version) async {
         await db.execute(
@@ -25,6 +30,7 @@ class TransactionProvider with ChangeNotifier {
           'id INTEGER PRIMARY KEY AUTOINCREMENT, '
           'title TEXT, amount REAL, date TEXT, type TEXT, note TEXT)',
         );
+        await _insertStarterData(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -45,6 +51,11 @@ class TransactionProvider with ChangeNotifier {
       [TransactionType.income.name],
     );
     _balance = (result.first['total'] as num?)?.toDouble() ?? 0;
+    _dartBalance = _transactions.fold(
+      0.0,
+      (sum, tx) =>
+          tx.type == TransactionType.income ? sum + tx.amount : sum - tx.amount,
+    );
     notifyListeners();
   }
 
@@ -65,6 +76,61 @@ class TransactionProvider with ChangeNotifier {
     final db = await database;
     await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
     await fetchAndSetTransactions();
+  }
+
+  Future<void> deleteAllTransactions() async {
+    final db = await database;
+    await db.delete('transactions');
+    await fetchAndSetTransactions();
+  }
+
+  Future<void> _insertStarterData(Database db) async {
+    final today = DateTime.now();
+    final starters = [
+      MyTransaction(
+        title: 'เงินเดือน',
+        amount: 18000,
+        date: today.subtract(const Duration(days: 7)),
+        type: TransactionType.income,
+        note: 'เดือนนี้',
+      ),
+      MyTransaction(
+        title: 'ค่าหอพัก',
+        amount: 3500,
+        date: today.subtract(const Duration(days: 6)),
+        type: TransactionType.expense,
+      ),
+      MyTransaction(
+        title: 'ข้าวเย็น',
+        amount: 65,
+        date: today.subtract(const Duration(days: 4)),
+        type: TransactionType.expense,
+        note: 'กะเพราหมูกรอบ',
+      ),
+      MyTransaction(
+        title: 'ขายของมือสอง',
+        amount: 800,
+        date: today.subtract(const Duration(days: 3)),
+        type: TransactionType.income,
+      ),
+      MyTransaction(
+        title: 'ค่าน้ำมัน',
+        amount: 300,
+        date: today.subtract(const Duration(days: 1)),
+        type: TransactionType.expense,
+      ),
+      MyTransaction(
+        title: 'กาแฟ',
+        amount: 55,
+        date: today,
+        type: TransactionType.expense,
+      ),
+    ];
+    final batch = db.batch();
+    for (final tx in starters) {
+      batch.insert('transactions', tx.toMap());
+    }
+    await batch.commit(noResult: true);
   }
 
   List<MyTransaction> _sampleData(int count) {

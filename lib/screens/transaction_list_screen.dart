@@ -46,6 +46,30 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
+  Future<void> _confirmDeleteAll() async {
+    final provider = context.read<TransactionProvider>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ลบทั้งหมด'),
+        content: const Text('ต้องการลบรายการทั้งหมดหรือไม่'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ลบ'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await provider.deleteAllTransactions();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
@@ -67,21 +91,36 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               ),
             ],
           ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep),
+            tooltip: 'ลบทั้งหมด',
+            onPressed: _confirmDeleteAll,
+          ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(40),
+          preferredSize: const Size.fromHeight(60),
           child: Consumer<TransactionProvider>(
             builder: (context, provider, _) {
               final balance = provider.balance;
+              final money = NumberFormat('#,##0.00');
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'ยอดคงเหลือ ${NumberFormat('#,##0.00').format(balance)} บาท',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: balance >= 0 ? Colors.green : Colors.red,
-                  ),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  children: [
+                    Text(
+                      'ยอดคงเหลือ ${money.format(balance)} บาท',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: balance >= 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    Text(
+                      'SQL ${money.format(balance)} | '
+                      'Dart ${money.format(provider.dartBalance)}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
                 ),
               );
             },
